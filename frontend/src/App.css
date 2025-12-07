@@ -29,6 +29,39 @@ main {
   gap: 2rem;
 }
 
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.search-input {
+  padding: 1rem;
+  font-size: 1rem;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  background-color: #1a1a1a;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+  border-color: #764ba2;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.search-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.search-input::placeholder {
+  color: #666;
+}
+
 .scrape-button {
   padding: 1rem 2rem;
   font-size: 1.1rem;
@@ -65,26 +98,79 @@ main {
 
 .data-display {
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px;
   padding: 2rem;
-  background-color: #1a1a1a;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-out;
 }
 
-.data-display h2 {
-  margin-bottom: 1rem;
+.character-name {
+  font-size: 2rem;
+  margin-bottom: 2rem;
   color: #667eea;
+  text-align: center;
 }
 
-.data-display pre {
-  text-align: left;
-  background-color: #0d0d0d;
-  padding: 1rem;
+.event-section {
+  margin-bottom: 2rem;
+}
+
+.event-title {
+  font-size: 1.5rem;
+  color: #764ba2;
+  margin-bottom: 1rem;
+  padding-left: 1rem;
+  border-left: 4px solid #667eea;
+}
+
+.event-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1a1a1a;
   border-radius: 8px;
-  overflow-x: auto;
-  color: #f0f0f0;
-  font-size: 0.9rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.event-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.event-table th {
+  padding: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.event-table td {
+  padding: 1.5rem;
+  border: 1px solid #333;
+  vertical-align: top;
+  line-height: 1.6;
+}
+
+.event-table td.conditions {
+  background-color: #242424;
+  width: 50%;
+}
+
+.event-table td.effects {
+  background-color: #1f1f1f;
+  width: 50%;
+}
+
+.event-name-inline {
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.event-table td div {
+  color: #e0e0e0;
+  white-space: pre-line;
 }
 
 /* Add animation classes for future use */
