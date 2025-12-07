@@ -1,26 +1,39 @@
-import { useState, useEffect } from 'react'
+/**
+ * Main App component - refactored with component composition.
+ * Uses custom hooks and modular components for better maintainability.
+ */
+import { useState } from 'react'
 import { fetchScrapedData } from './services/api'
+import { useApiCall } from './hooks/useApiCall'
+import SearchBar from './components/SearchBar'
+import ErrorDisplay from './components/ErrorDisplay'
+import RaceList from './components/RaceList'
+import EventList from './components/EventList'
 import './App.css'
 
 function App() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const { data, loading, error, execute } = useApiCall()
 
-  const handleScrape = async () => {
-    setLoading(true)
-    setError(null)
-    
+  const handleSearch = async () => {
     try {
-      const result = await fetchScrapedData(searchQuery)
-      console.log('Scraped data:', result) // Debug log
-      setData(result)
+      await execute(fetchScrapedData, searchQuery)
     } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+      // Error is already handled by useApiCall
+      console.error('Search failed:', err)
     }
+  }
+
+  // Debug: log data when it changes
+  if (data) {
+    console.log('Received data:', data)
+    console.log('Events:', data.events)
+    console.log('Events type:', Array.isArray(data.events))
+    console.log('Events length:', data.events?.length)
+  }
+
+  const handleInputChange = (e) => {
+    setSearchQuery(e.target.value)
   }
 
   return (
@@ -31,81 +44,19 @@ function App() {
       </header>
 
       <main>
-        <div className="search-container">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search query (leave empty for default URL)"
-            className="search-input"
-            disabled={loading}
-          />
-          <button 
-            onClick={handleScrape} 
-            disabled={loading}
-            className="scrape-button"
-          >
-            {loading ? 'Scraping...' : 'Fetch Data'}
-          </button>
-        </div>
+        <SearchBar
+          onSearch={handleSearch}
+          loading={loading}
+          value={searchQuery}
+          onChange={handleInputChange}
+        />
 
-        {error && (
-          <div className="error">
-            <p>Error: {error}</p>
-          </div>
-        )}
+        <ErrorDisplay error={error} />
 
         {data && (
           <div className="data-display">
-            <h2 className="character-name">{data.title || data.character}</h2>
-            
-            {/* Matching Races Section */}
-            {data.matching_races && data.matching_races.length > 0 && (
-              <div className="races-section">
-                <h3 className="races-title">🏁 Races Mentioned in Events ({data.matching_races.length})</h3>
-                <div className="races-grid">
-                  {data.matching_races.map((match, index) => (
-                    <div key={index} className="race-card">
-                      <div className="race-tier">{match.tier}</div>
-                      <div className="race-name">{match.race}</div>
-                      <div className="race-details">
-                        <span className="race-period">{match.period}</span>
-                        <span className="race-distance">{match.distance}</span>
-                      </div>
-                      <div className="race-event">Event: {match.event_name}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Events Section */}
-            {data.events && data.events.length > 0 ? (
-              data.events.flat().map((event, index) => (
-                <div key={index} className="event-section">
-                  <h3 className="event-title">{event.event_name}</h3>
-                  <table className="event-table">
-                    <thead>
-                      <tr>
-                        <th>Event Conditions</th>
-                        <th>Event Effects</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="conditions">
-                          <div className="event-name-inline">{event.event_name}</div>
-                          <div>{event.conditions}</div>
-                        </td>
-                        <td className="effects">{event.effects}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              ))
-            ) : (
-              <p>No events found</p>
-            )}
+            <RaceList races={data.matching_races} />
+            <EventList events={data.events} title={data.title} />
           </div>
         )}
       </main>
