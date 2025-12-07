@@ -20,7 +20,10 @@ logger = get_logger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS for React frontend
+
+# Configure CORS for production
+cors_origins = [settings.FRONTEND_URL] if hasattr(settings, 'FRONTEND_URL') else "*"
+CORS(app, origins=cors_origins)  # Enable CORS for React frontend
 
 # Initialize service (singleton pattern for the app lifetime)
 scraper_service = ScraperService()

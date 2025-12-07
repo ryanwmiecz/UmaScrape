@@ -17,8 +17,11 @@ class Settings:
     
     # Flask settings
     DEBUG: bool = os.getenv("FLASK_DEBUG", "False").lower() == "true"
-    PORT: int = int(os.getenv("FLASK_PORT", "5000"))
+    PORT: int = int(os.getenv("PORT", os.getenv("FLASK_PORT", "5000")))  # Render uses PORT
     HOST: str = os.getenv("FLASK_HOST", "0.0.0.0")
+    
+    # CORS settings for production
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
     
     # HTTP client settings
     REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "10"))
