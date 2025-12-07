@@ -36,7 +36,7 @@ function App() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Character name or paste game8 URL"
+            placeholder="Search query (leave empty for default URL)"
             className="search-input"
             disabled={loading}
           />
@@ -59,6 +59,27 @@ function App() {
           <div className="data-display">
             <h2 className="character-name">{data.title || data.character}</h2>
             
+            {/* Matching Races Section */}
+            {data.matching_races && data.matching_races.length > 0 && (
+              <div className="races-section">
+                <h3 className="races-title">🏁 Races Mentioned in Events ({data.matching_races.length})</h3>
+                <div className="races-grid">
+                  {data.matching_races.map((match, index) => (
+                    <div key={index} className="race-card">
+                      <div className="race-tier">{match.tier}</div>
+                      <div className="race-name">{match.race}</div>
+                      <div className="race-details">
+                        <span className="race-period">{match.period}</span>
+                        <span className="race-distance">{match.distance}</span>
+                      </div>
+                      <div className="race-event">Event: {match.event_name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Events Section */}
             {data.events && data.events.length > 0 ? (
               data.events.flat().map((event, index) => (
                 <div key={index} className="event-section">
