@@ -173,6 +173,88 @@ main {
   white-space: pre-line;
 }
 
+/* Races Section */
+.races-section {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-radius: 12px;
+  border: 2px solid #667eea;
+}
+
+.races-title {
+  font-size: 1.8rem;
+  color: #667eea;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.races-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.race-card {
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: transform 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.race-card:hover {
+  transform: translateY(-4px);
+  border-color: #667eea;
+}
+
+.race-tier {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.race-name {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #764ba2;
+  margin-top: 0.5rem;
+}
+
+.race-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
+}
+
+.race-period {
+  font-size: 0.9rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.race-distance {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.race-event {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-top: 0.25rem;
+}
+
 /* Add animation classes for future use */
 @keyframes fadeIn {
   from {

@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote_plus, unquote, urlparse, parse_qs
+from .race_matcher import scrape_race_list, find_matching_races
+import re
 
 # Character URL dictionary - add more as needed
 CHARACTER_URLS = {
@@ -218,6 +220,11 @@ def scrape_data(search_query=None):
             'events': tables_data if tables_data else []
         }
         
+        # Get race list and find matching races
+        race_list = scrape_race_list()
+        matching_races = find_matching_races(tables_data, race_list)
+        data['matching_races'] = matching_races
+        
         return data
         
     except requests.RequestException as e:
@@ -249,9 +256,17 @@ def parse_table(table):
     for tr in data_rows:
         cells = tr.find_all(['td', 'th'])
         if len(cells) >= 2:
-            # First cell is conditions, second is effects
-            conditions = cells[0].get_text(strip=True)
-            effects = cells[1].get_text(strip=True)
+            # Use separator to preserve spaces between elements
+            conditions = cells[0].get_text(separator=' ', strip=True)
+            effects_raw = cells[1].get_text(separator=' ', strip=True)
+            
+            # Add commas between stat gains and skills in effects
+            # Pattern: "Speed +25 Power +25" -> "Speed +25, Power +25"
+            # Pattern: "Head-On +2 All I've Got +2" -> "Head-On +2, All I've Got +2"
+            # Add comma before stat names (Speed, Power, Stamina, Guts, Wisdom, Skill Points)
+            effects = re.sub(r'(\+\d+)\s+(Speed|Power|Stamina|Guts|Wisdom|Skill Points)', r'\1, \2', effects_raw)
+            # Add comma before skill level ups (capital letter or skill name after +number)
+            effects = re.sub(r'(\+\d+)\s+([A-Z])', r'\1, \2', effects)
             
             # Extract event name from conditions if it starts with bold text
             bold = cells[0].find(['b', 'strong'])
