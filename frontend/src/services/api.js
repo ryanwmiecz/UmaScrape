@@ -12,11 +12,13 @@ const api = axios.create({
 
 /**
  * Fetch scraped data from backend
+ * @param {string} query - Optional search query
  * @returns {Promise<Object>} Scraped data
  */
-export const fetchScrapedData = async () => {
+export const fetchScrapedData = async (query = '') => {
   try {
-    const response = await api.get('/scrape')
+    const url = query ? `/scrape?q=${encodeURIComponent(query)}` : '/scrape'
+    const response = await api.get(url)
     if (response.data.success) {
       return response.data.data
     } else {

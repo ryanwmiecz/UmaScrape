@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from scraper.scraper import scrape_data
 
@@ -12,11 +12,20 @@ def health_check():
 
 @app.route('/api/scrape', methods=['GET'])
 def scrape():
-    """Main scraping endpoint - returns scraped data"""
+    """Main scraping endpoint - returns scraped data
+    
+    Query params:
+        q (optional): Search query to find and scrape first result
+    """
     try:
-        data = scrape_data()
-        return jsonify({'success': True, 'data': data})
+        # Get search query from URL parameter (?q=search+term)
+        search_query = request.args.get('q')
+        data = scrape_data(search_query)
+        return jsonify({'success': True, 'data': data, 'url': data.get('url')})
     except Exception as e:
+        print(f"Error in scrape endpoint: {str(e)}")  # Print to console
+        import traceback
+        traceback.print_exc()  # Print full stack trace
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
