@@ -9,7 +9,7 @@ from urllib.parse import quote_plus, unquote, urlparse, parse_qs
 import re
 
 from config.settings import settings
-from models import Event, CharacterData
+from models import Event, CharacterData, RecommendedStats
 from utils import HTTPClient, get_logger
 
 
@@ -54,6 +54,8 @@ class ScraperStrategy(ABC):
 class Game8Scraper(ScraperStrategy):
     """Scraper for Game8 Umamusume character pages."""
     
+    TIER_LIST_URL = "https://game8.co/games/Umamusume-Pretty-Derby/archives/536352"
+    
     def scrape(self, url: str) -> CharacterData:
         """
         Scrape character data from Game8 page.
@@ -73,6 +75,15 @@ class Game8Scraper(ScraperStrategy):
             response = self.http_client.get(url)
             soup = BeautifulSoup(response.content, 'html5lib')
             
+            # Extract character name from the page
+            character_name = self._extract_character_name(soup, url)
+            
+            # Scrape the overall rank from tier list
+            overall_rank = self._scrape_overall_rank(character_name)
+            
+            # Scrape recommended stats
+            recommended_stats = self._scrape_recommended_stats(soup)
+            
             # Find the "Hidden Events" section
             header = soup.find(
                 lambda tag: tag.name == 'h2' and 'Hidden Events' in tag.text
@@ -83,7 +94,9 @@ class Game8Scraper(ScraperStrategy):
                 return CharacterData(
                     url=url,
                     title='No title found',
-                    events=[]
+                    events=[],
+                    overall_rank=overall_rank,
+                    recommended_stats=recommended_stats
                 )
             
             title = header.text.strip()
@@ -97,7 +110,9 @@ class Game8Scraper(ScraperStrategy):
             return CharacterData(
                 url=url,
                 title=title,
-                events=events
+                events=events,
+                overall_rank=overall_rank,
+                recommended_stats=recommended_stats
             )
         
         except Exception as e:
@@ -194,6 +209,181 @@ class Game8Scraper(ScraperStrategy):
         # Add comma before skill level ups
         effects = re.sub(r'(\+\d+)\s+([A-Z])', r'\1, \2', effects)
         return effects
+    
+    def _extract_character_name(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        Extract character name from the page.
+        
+        Args:
+            soup: BeautifulSoup object of the character page
+            url: Character page URL
+        
+        Returns:
+            Character name string
+        """
+        # Try to get from page title
+        title_tag = soup.find('title')
+        if title_tag:
+            title = title_tag.get_text()
+            # Extract character name from title like "Oguri Cap (Starlight Beat) Build Guide"
+            match = re.match(r'^(.*?)\s+Build\s+Guide', title)
+            if match:
+                return match.group(1).strip()
+        
+        # Try to get from h1 tag
+        h1 = soup.find('h1')
+        if h1:
+            text = h1.get_text(strip=True)
+            match = re.match(r'^(.*?)\s+Build\s+Guide', text)
+            if match:
+                return match.group(1).strip()
+            return text
+        
+        # Fallback: extract from URL
+        logger.warning(f"Could not extract character name from page, using URL")
+        return url.split('/')[-1]
+    
+    def _scrape_recommended_stats(self, soup: BeautifulSoup) -> Optional[RecommendedStats]:
+        """
+        Scrape recommended stats from the character page.
+        
+        Args:
+            soup: BeautifulSoup object of the character page
+        
+        Returns:
+            RecommendedStats object or None if not found
+        """
+        try:
+            # Find the "Recommended Stats" header
+            header = soup.find('h3', id='hm_6')
+            if not header or 'Recommended Stats' not in header.get_text():
+                logger.debug("Recommended Stats section not found")
+                return None
+            
+            # Find the table after the header
+            table = header.find_next('table')
+            if not table:
+                logger.debug("No table found after Recommended Stats header")
+                return None
+            
+            # Find the tbody
+            tbody = table.find('tbody')
+            if not tbody:
+                logger.debug("No tbody found in stats table")
+                return None
+            
+            rows = tbody.find_all('tr')
+            if len(rows) < 2:
+                logger.debug("Not enough rows in stats table")
+                return None
+            
+            # First row has the stat icons with alt text
+            header_row = rows[0]
+            stat_headers = []
+            for th in header_row.find_all('th'):
+                img = th.find('img', alt=True)
+                if img:
+                    stat_name = img.get('alt', '').strip().lower()
+                    stat_headers.append(stat_name)
+            
+            # Second row has the values
+            value_row = rows[1]
+            stat_values = []
+            for td in value_row.find_all('td'):
+                bold = td.find('b')
+                if bold:
+                    try:
+                        value = int(bold.get_text(strip=True))
+                        stat_values.append(value)
+                    except ValueError:
+                        logger.warning(f"Could not parse stat value: {bold.get_text()}")
+                        return None
+            
+            # Map stats to the expected names
+            if len(stat_headers) != 5 or len(stat_values) != 5:
+                logger.warning(f"Expected 5 stats, got {len(stat_headers)} headers and {len(stat_values)} values")
+                return None
+            
+            stats_dict = dict(zip(stat_headers, stat_values))
+            
+            return RecommendedStats(
+                speed=stats_dict.get('speed', 0),
+                stamina=stats_dict.get('stamina', 0),
+                power=stats_dict.get('power', 0),
+                guts=stats_dict.get('guts', 0),
+                wit=stats_dict.get('wit', 0)
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to scrape recommended stats: {str(e)}", exc_info=True)
+            return None
+    
+    def _scrape_overall_rank(self, character_name: str) -> Optional[str]:
+        """
+        Scrape the overall rank for a character from the tier list page.
+        
+        Args:
+            character_name: Name of the character to find rank for
+        
+        Returns:
+            Rank string (SS, S, A, or B) or None if not found
+        """
+        try:
+            # Extract base character name (remove variant in parentheses)
+            base_name = re.sub(r'\s*\([^)]*\)', '', character_name).strip()
+            
+            response = self.http_client.get(self.TIER_LIST_URL)
+            soup = BeautifulSoup(response.content, 'html5lib')
+            
+            # Find all tables on the page
+            tables = soup.find_all('table')
+            
+            for table in tables:
+                rows = table.find_all('tr')
+                
+                for row in rows:
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) < 2:
+                        continue
+                    
+                    # First cell contains rank - check image alt attribute
+                    rank_cell = cells[0]
+                    rank_img = rank_cell.find('img', alt=True)
+                    if not rank_img:
+                        continue
+                    
+                    rank_text = rank_img.get('alt', '')
+                    
+                    # Check if first cell has a rank pattern
+                    rank_match = re.search(r'\b(SS|S|A|B)\s+Rank\b', rank_text)
+                    if not rank_match:
+                        continue
+                    
+                    rank = rank_match.group(1)
+                    
+                    # Second cell contains character names - get from image alt attributes
+                    characters_cell = cells[1]
+                    character_images = characters_cell.find_all('img', alt=True)
+                    
+                    for img in character_images:
+                        img_alt = img.get('alt', '').strip()
+                        
+                        # Skip rank indicator images
+                        if 'Rank' in img_alt and len(img_alt) < 15:
+                            continue
+                        
+                        # Remove variant in parentheses from alt text for comparison
+                        img_base = re.sub(r'\s*\([^)]*\)', '', img_alt).strip()
+                        
+                        # Check if this matches our character
+                        if base_name.lower() == img_base.lower():
+                            return rank
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to scrape overall rank: {str(e)}", exc_info=True)
+            return None
 
 
 class DuckDuckGoSearcher(ScraperStrategy):

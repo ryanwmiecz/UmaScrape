@@ -7,6 +7,8 @@ import { fetchScrapedData } from './services/api'
 import { useApiCall } from './hooks/useApiCall'
 import SearchBar from './components/SearchBar'
 import ErrorDisplay from './components/ErrorDisplay'
+import RankDisplay from './components/RankDisplay'
+import StatsDisplay from './components/StatsDisplay'
 import RaceList from './components/RaceList'
 import EventList from './components/EventList'
 import './App.css'
@@ -30,10 +32,18 @@ function App() {
     console.log('Events:', data.events)
     console.log('Events type:', Array.isArray(data.events))
     console.log('Events length:', data.events?.length)
+    console.log('Overall rank:', data.overall_rank)
   }
 
   const handleInputChange = (e) => {
     setSearchQuery(e.target.value)
+  }
+
+  // Extract character name from title
+  const getCharacterName = () => {
+    if (!data || !data.title) return null
+    // Remove "Hidden Events" from title if present
+    return data.title.replace(/Hidden Events/i, '').trim()
   }
 
   return (
@@ -55,6 +65,8 @@ function App() {
 
         {data && (
           <div className="data-display">
+            <RankDisplay rank={data.overall_rank} characterName={getCharacterName()} />
+            <StatsDisplay stats={data.recommended_stats} />
             <RaceList races={data.matching_races} />
             <EventList events={data.events} title={data.title} />
           </div>

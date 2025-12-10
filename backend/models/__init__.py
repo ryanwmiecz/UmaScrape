@@ -66,6 +66,27 @@ class RaceMatch:
 
 
 @dataclass
+class RecommendedStats:
+    """Recommended stats for a character."""
+    
+    speed: int
+    stamina: int
+    power: int
+    guts: int
+    wit: int
+    
+    def to_dict(self) -> Dict[str, int]:
+        """Convert stats to dictionary format."""
+        return {
+            'speed': self.speed,
+            'stamina': self.stamina,
+            'power': self.power,
+            'guts': self.guts,
+            'wit': self.wit
+        }
+
+
+@dataclass
 class CharacterData:
     """Complete character data including events and race information."""
     
@@ -73,6 +94,8 @@ class CharacterData:
     title: str
     events: List[Event] = field(default_factory=list)
     matching_races: List[RaceMatch] = field(default_factory=list)
+    overall_rank: Optional[str] = None
+    recommended_stats: Optional[RecommendedStats] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert character data to dictionary format for API response."""
@@ -80,7 +103,9 @@ class CharacterData:
             'url': self.url,
             'title': self.title,
             'events': [event.to_dict() for event in self.events],
-            'matching_races': [race.to_dict() for race in self.matching_races]
+            'matching_races': [race.to_dict() for race in self.matching_races],
+            'overall_rank': self.overall_rank,
+            'recommended_stats': self.recommended_stats.to_dict() if self.recommended_stats else None
         }
     
     def add_event(self, event: Event) -> None:
