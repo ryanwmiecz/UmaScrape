@@ -21,9 +21,13 @@ logger = get_logger(__name__)
 # Create Flask app
 app = Flask(__name__)
 
-# Configure CORS for production
-cors_origins = [settings.FRONTEND_URL] if hasattr(settings, 'FRONTEND_URL') else "*"
-CORS(app, origins=cors_origins)  # Enable CORS for React frontend
+# Configure CORS for both development and production
+allowed_origins = [
+    "https://umascraper.onrender.com",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
+CORS(app, origins=allowed_origins, supports_credentials=False)
 
 # Initialize service (singleton pattern for the app lifetime)
 scraper_service = ScraperService()
